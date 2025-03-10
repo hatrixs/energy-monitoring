@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  apiKeys   ApiKey[]
+
+  @@map("users")
+}
+
+model ApiKey {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  key         String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastUsedAt  DateTime?
+  
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}
+
+model WorkCenter {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  areas     Area[]
+
+  @@map("work_centers")
+}
+
+model Area {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workCenterId String   @db.ObjectId
+  workCenter   WorkCenter @relation(fields: [workCenterId], references: [id], onDelete: Cascade)
+  
+  sensors      Sensor[]
+
+  @@unique([name, workCenterId])
+  @@map("areas")
+}
+
+model Sensor {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  sensorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  areaId    String   @db.ObjectId
+  area      Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  
+  measurements Measurement[]
+
+  @@unique([sensorId, areaId])
+  @@map("sensors")
+}
+
+model Measurement {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  voltage   Float
+  current   Float
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sensorId  String   @db.ObjectId
+  sensor    Sensor   @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@map("measurements")
+}
