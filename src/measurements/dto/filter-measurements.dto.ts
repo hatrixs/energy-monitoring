@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsOptional, IsString, IsEnum } from 'class-validator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 export class FilterMeasurementsDto extends PaginationDto {
@@ -21,4 +21,8 @@ export class FilterMeasurementsDto extends PaginationDto {
   @IsOptional()
   @IsString()
   workCenterId?: string;
+
+  @IsOptional()
+  @IsEnum(['15min', 'hour', 'day', 'week'])
+  aggregationType?: '15min' | 'hour' | 'day' | 'week';
 }

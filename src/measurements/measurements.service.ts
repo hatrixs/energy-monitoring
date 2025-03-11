@@ -56,6 +56,13 @@ export class MeasurementsService {
     return this.measurementRepository.findMany(filters);
   }
 
+  async getAggregatedMeasurements(
+    filters: FilterMeasurementsDto,
+    aggregationType: '15min' | 'hour' | 'day' | 'week'
+  ) {
+    return this.measurementRepository.getAggregatedMeasurements(filters, aggregationType);
+  }
+
   async findOne(id: string) {
     return this.measurementRepository.findOne(id);
   }

@@ -4,9 +4,10 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { FilterMeasurementsDto } from '../dto/filter-measurements.dto';
 import {
-  CreateMeasurementData,
   Measurement,
   MeasurementRepository,
+  CreateMeasurementData,
+  AggregatedMeasurement,
 } from './measurement-repository.interface';
 
 @Injectable()
@@ -315,5 +316,126 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
         },
       };
     }
+  }
+
+  async getAggregatedMeasurements(
+    filter: FilterMeasurementsDto,
+    aggregationType: '15min' | 'hour' | 'day' | 'week'
+  ): Promise<AggregatedMeasurement[]> {
+    try {
+      const where = this.buildWhereClause(filter);
+      
+      // Convertir el intervalo a milisegundos
+      let intervalMs: number;
+      switch (aggregationType) {
+        case '15min':
+          intervalMs = 15 * 60 * 1000; // 15 minutos
+          break;
+        case 'hour':
+          intervalMs = 60 * 60 * 1000; // 1 hora
+          break;
+        case 'day':
+          intervalMs = 24 * 60 * 60 * 1000; // 1 día
+          break;
+        case 'week':
+          intervalMs = 7 * 24 * 60 * 60 * 1000; // 1 semana
+          break;
+      }
+
+      const result = await this.prisma.measurement.aggregateRaw({
+        pipeline: [
+          // Filtrar por las condiciones
+          { $match: where },
+          // Agrupar por intervalo de tiempo
+          {
+            $group: {
+              _id: {
+                $subtract: [
+                  { $toLong: '$date' },
+                  { $mod: [{ $toLong: '$date' }, intervalMs] }
+                ]
+              },
+              avgVoltage: { $avg: '$voltage' },
+              maxVoltage: { $max: '$voltage' },
+              minVoltage: { $min: '$voltage' },
+              avgCurrent: { $avg: '$current' },
+              maxCurrent: { $max: '$current' },
+              minCurrent: { $min: '$current' },
+              count: { $sum: 1 },
+              // Mantener la información del primer sensor del grupo
+              sensor: { $first: '$sensor' }
+            }
+          },
+          // Convertir el timestamp de vuelta a fecha
+          {
+            $project: {
+              _id: 0,
+              timestamp: { $toDate: '$_id' },
+              avgVoltage: 1,
+              maxVoltage: 1,
+              minVoltage: 1,
+              avgCurrent: 1,
+              maxCurrent: 1,
+              minCurrent: 1,
+              count: 1,
+              sensor: 1
+            }
+          },
+          // Ordenar por timestamp
+          { $sort: { timestamp: 1 } }
+        ]
+      });
+
+      return result as unknown as AggregatedMeasurement[];
+    } catch (error) {
+      this.logger.error(
+        `Error al obtener mediciones agregadas: ${error.message}`,
+        error.stack,
+      );
+      return [];
+    }
+  }
+
+  private buildWhereClause(filter?: FilterMeasurementsDto): any {
+    const where: any = {};
+
+    if (filter) {
+      if (filter.startDate && filter.endDate) {
+        where.date = {
+          gte: new Date(filter.startDate),
+          lte: new Date(filter.endDate),
+        };
+      } else if (filter.startDate) {
+        where.date = {
+          gte: new Date(filter.startDate),
+        };
+      } else if (filter.endDate) {
+        where.date = {
+          lte: new Date(filter.endDate),
+        };
+      }
+
+      if (filter.sensorId) {
+        where.sensorId = filter.sensorId;
+      }
+
+      if (filter.areaId || filter.workCenterId) {
+        const sensorWhere: any = {};
+
+        if (filter.areaId) {
+          sensorWhere.areaId = filter.areaId;
+        }
+
+        if (filter.workCenterId) {
+          sensorWhere.area = {
+            workCenterId: filter.workCenterId,
+          };
+        }
+
+        where.sensor = sensorWhere;
+      }
+    }
+
+    return where;
   }
 }
