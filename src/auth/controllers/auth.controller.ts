@@ -26,7 +26,7 @@ export class AuthController {
     return this.authService.signIn(signInDto);
   }
 
-  @Get('refresh-token')
+  @Get('check-status')
   @Auth()
   @ApiResponse({ status: 200, description: 'Token válido' })
   @ApiResponse({ status: 401, description: 'Token no válido' })

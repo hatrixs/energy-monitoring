@@ -1,8 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  WorkCenter,
-  WorkCenterRepository,
-} from './repositories/work-center-repository.interface';
+import { WorkCenterRepository } from './repositories/work-center-repository.interface';
 
 @Injectable()
 export class WorkCentersService {
@@ -11,7 +8,17 @@ export class WorkCentersService {
     private readonly workCenterRepository: WorkCenterRepository,
   ) {}
 
-  async findOrCreate(name: string): Promise<WorkCenter> {
+  /**
+   * Busca un centro de trabajo por nombre o lo crea si no existe
+   */
+  async findOrCreate(name: string) {
     return this.workCenterRepository.findOrCreate(name);
+  }
+
+  /**
+   * Obtiene todos los centros de trabajo con sus áreas y sensores
+   */
+  async findAll() {
+    return this.workCenterRepository.findAll();
   }
 }

@@ -14,21 +14,13 @@ export interface Measurement {
   current: number;
   /** Fecha y hora de la medición */
   date: Date;
-  /** Fecha de creación del registro */
-  createdAt: Date;
-  /** Fecha de última actualización del registro */
-  updatedAt: Date;
-  /** Identificador del sensor que realizó la medición */
-  sensorId: string;
   /** Información del sensor y sus relaciones */
   sensor?: {
     id: string;
     sensorId: string;
-    areaId: string;
     area?: {
       id: string;
       name: string;
-      workCenterId: string;
       workCenter?: {
         id: string;
         name: string;
@@ -100,24 +92,4 @@ export interface MeasurementRepository {
     workCenterId: string,
     pagination: PaginationDto,
   ): Promise<PaginatedResponse<Measurement>>;
-
-  /**
-   * Calcula estadísticas de voltaje y corriente para un sensor específico
-   * @param sensorId Identificador del sensor
-   * @returns Promedios de voltaje y corriente
-   */
-  getStatisticsBySensor(sensorId: string): Promise<{
-    avgVoltage: number;
-    avgCurrent: number;
-  }>;
-
-  /**
-   * Calcula estadísticas de voltaje y corriente para un área específica
-   * @param areaId Identificador del área
-   * @returns Promedios de voltaje y corriente
-   */
-  getStatisticsByArea(areaId: string): Promise<{
-    avgVoltage: number;
-    avgCurrent: number;
-  }>;
 }

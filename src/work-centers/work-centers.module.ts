@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
-import { PrismaWorkCenterRepository } from './repositories/prisma-work-center.repository';
+import { WorkCentersController } from './work-centers.controller';
 import { WorkCentersService } from './work-centers.service';
+import { PrismaWorkCenterRepository } from './repositories/prisma-work-center.repository';
 
 @Module({
+  controllers: [WorkCentersController],
   providers: [
     WorkCentersService,
     {

@@ -92,26 +92,4 @@ export class MeasurementsController {
   ) {
     return this.measurementsService.findByWorkCenter(workCenterId, pagination);
   }
-
-  /**
-   * Obtiene estadísticas de voltaje y corriente para un sensor específico
-   * @param sensorId Identificador del sensor
-   * @returns Promedios de voltaje y corriente
-   */
-  @Get('statistics/sensor/:sensorId')
-  @Auth()
-  getStatisticsBySensor(@Param('sensorId') sensorId: string) {
-    return this.measurementsService.getStatisticsBySensor(sensorId);
-  }
-
-  /**
-   * Obtiene estadísticas de voltaje y corriente para un área específica
-   * @param areaId Identificador del área
-   * @returns Promedios de voltaje y corriente
-   */
-  @Get('statistics/area/:areaId')
-  @Auth()
-  getStatisticsByArea(@Param('areaId') areaId: string) {
-    return this.measurementsService.getStatisticsByArea(areaId);
-  }
 }

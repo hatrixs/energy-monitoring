@@ -13,6 +13,31 @@ import {
 export class PrismaMeasurementRepository implements MeasurementRepository {
   private readonly logger = new Logger(PrismaMeasurementRepository.name);
 
+  private readonly measurementSelect = {
+    id: true,
+    voltage: true,
+    current: true,
+    date: true,
+    sensor: {
+      select: {
+        id: true,
+        sensorId: true,
+        area: {
+          select: {
+            id: true,
+            name: true,
+            workCenter: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    },
+  } as const;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: CreateMeasurementData): Promise<Measurement> {
@@ -80,17 +105,7 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
           where,
           skip: filter?.skip || 0,
           take: filter?.limit || 10,
-          include: {
-            sensor: {
-              include: {
-                area: {
-                  include: {
-                    workCenter: true,
-                  },
-                },
-              },
-            },
-          },
+          select: this.measurementSelect,
         }),
       ]);
 
@@ -130,17 +145,7 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
     try {
       return await this.prisma.measurement.findUnique({
         where: { id },
-        include: {
-          sensor: {
-            include: {
-              area: {
-                include: {
-                  workCenter: true,
-                },
-              },
-            },
-          },
-        },
+        select: this.measurementSelect,
       });
     } catch (error) {
       this.logger.error(
@@ -164,17 +169,7 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
           where: { sensorId },
           skip: pagination.skip,
           take: pagination.limit,
-          include: {
-            sensor: {
-              include: {
-                area: {
-                  include: {
-                    workCenter: true,
-                  },
-                },
-              },
-            },
-          },
+          select: this.measurementSelect,
         }),
       ]);
 
@@ -229,17 +224,7 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
           },
           skip: pagination.skip,
           take: pagination.limit,
-          include: {
-            sensor: {
-              include: {
-                area: {
-                  include: {
-                    workCenter: true,
-                  },
-                },
-              },
-            },
-          },
+          select: this.measurementSelect,
         }),
       ]);
 
@@ -298,17 +283,7 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
           },
           skip: pagination.skip,
           take: pagination.limit,
-          include: {
-            sensor: {
-              include: {
-                area: {
-                  include: {
-                    workCenter: true,
-                  },
-                },
-              },
-            },
-          },
+          select: this.measurementSelect,
         }),
       ]);
 
@@ -339,62 +314,6 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
           hasPreviousPage: false,
         },
       };
-    }
-  }
-
-  async getStatisticsBySensor(
-    sensorId: string,
-  ): Promise<{ avgVoltage: number; avgCurrent: number }> {
-    try {
-      const result = await this.prisma.measurement.aggregate({
-        where: {
-          sensorId,
-        },
-        _avg: {
-          voltage: true,
-          current: true,
-        },
-      });
-
-      return {
-        avgVoltage: result._avg.voltage || 0,
-        avgCurrent: result._avg.current || 0,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error al obtener estadísticas por sensor: ${error.message}`,
-        error.stack,
-      );
-      return { avgVoltage: 0, avgCurrent: 0 };
-    }
-  }
-
-  async getStatisticsByArea(
-    areaId: string,
-  ): Promise<{ avgVoltage: number; avgCurrent: number }> {
-    try {
-      const result = await this.prisma.measurement.aggregate({
-        where: {
-          sensor: {
-            areaId,
-          },
-        },
-        _avg: {
-          voltage: true,
-          current: true,
-        },
-      });
-
-      return {
-        avgVoltage: result._avg.voltage || 0,
-        avgCurrent: result._avg.current || 0,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error al obtener estadísticas por área: ${error.message}`,
-        error.stack,
-      );
-      return { avgVoltage: 0, avgCurrent: 0 };
     }
   }
 }

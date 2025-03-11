@@ -74,12 +74,4 @@ export class MeasurementsService {
       pagination,
     );
   }
-
-  async getStatisticsBySensor(sensorId: string) {
-    return this.measurementRepository.getStatisticsBySensor(sensorId);
-  }
-
-  async getStatisticsByArea(areaId: string) {
-    return this.measurementRepository.getStatisticsByArea(areaId);
-  }
 }

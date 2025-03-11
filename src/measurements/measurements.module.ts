@@ -16,5 +16,6 @@ import { PrismaMeasurementRepository } from './repositories/prisma-measurement.r
       useClass: PrismaMeasurementRepository,
     },
   ],
+  exports: [MeasurementsService],
 })
 export class MeasurementsModule {}

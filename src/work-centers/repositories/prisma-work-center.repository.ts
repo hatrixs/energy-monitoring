@@ -13,12 +13,10 @@ export class PrismaWorkCenterRepository implements WorkCenterRepository {
 
   async findByName(name: string): Promise<WorkCenter | null> {
     try {
-      return await this.prisma.workCenter.findUnique({
-        where: { name },
-      });
+      return await this.prisma.workCenter.findFirst({ where: { name } });
     } catch (error) {
       this.logger.error(
-        `Error al buscar centro de trabajo por nombre: ${error.message}`,
+        `Error al buscar centro de trabajo: ${error.message}`,
         error.stack,
       );
       return null;
@@ -41,17 +39,42 @@ export class PrismaWorkCenterRepository implements WorkCenterRepository {
 
   async findOrCreate(name: string): Promise<WorkCenter> {
     try {
-      return await this.prisma.workCenter.upsert({
-        where: { name },
-        update: {},
-        create: { name },
-      });
+      let workCenter = await this.findByName(name);
+      if (!workCenter) {
+        workCenter = await this.create(name);
+      }
+      return workCenter;
     } catch (error) {
       this.logger.error(
-        `Error al buscar o crear centro de trabajo: ${error.message}`,
+        `Error al buscar/crear centro de trabajo: ${error.message}`,
         error.stack,
       );
       throw error;
+    }
+  }
+
+  async findAll(): Promise<WorkCenter[]> {
+    try {
+      return await this.prisma.workCenter.findMany({
+        include: {
+          areas: {
+            include: {
+              sensors: {
+                select: {
+                  id: true,
+                  sensorId: true,
+                },
+              },
+            },
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error al obtener centros de trabajo: ${error.message}`,
+        error.stack,
+      );
+      return [];
     }
   }
 }
