@@ -7,7 +7,7 @@ import {
   Measurement,
   MeasurementRepository,
   CreateMeasurementData,
-  AggregatedMeasurement,
+  CreateMeasurementWithRelationsData,
 } from './measurement-repository.interface';
 
 @Injectable()
@@ -51,6 +51,70 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
     } catch (error) {
       this.logger.error(
         `Error al crear medición: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  async createWithRelations(
+    data: CreateMeasurementWithRelationsData,
+  ): Promise<Measurement> {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // Buscar o crear el centro de trabajo
+        const workCenter = await tx.workCenter.upsert({
+          where: { name: data.workCenter },
+          update: {},
+          create: { name: data.workCenter },
+        });
+
+        // Buscar o crear el área
+        const area = await tx.area.upsert({
+          where: {
+            name_workCenterId: {
+              name: data.area,
+              workCenterId: workCenter.id,
+            },
+          },
+          update: {},
+          create: {
+            name: data.area,
+            workCenterId: workCenter.id,
+          },
+        });
+
+        // Buscar o crear el sensor
+        const sensor = await tx.sensor.upsert({
+          where: {
+            sensorId_areaId: {
+              sensorId: data.sensorId,
+              areaId: area.id,
+            },
+          },
+          update: {},
+          create: {
+            sensorId: data.sensorId,
+            areaId: area.id,
+          },
+        });
+
+        // Crear la medición
+        const measurement = await tx.measurement.create({
+          data: {
+            voltage: data.voltage,
+            current: data.current,
+            date: data.date,
+            sensorId: sensor.id,
+          },
+          select: this.measurementSelect,
+        });
+
+        return measurement;
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error al crear medición con relaciones: ${error.message}`,
         error.stack,
       );
       throw error;
@@ -129,16 +193,7 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
         `Error al buscar mediciones: ${error.message}`,
         error.stack,
       );
-      return {
-        data: [],
-        meta: {
-          total: 0,
-          page: 1,
-          lastPage: 1,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+      throw error;
     }
   }
 
@@ -153,7 +208,7 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
         `Error al buscar medición por ID: ${error.message}`,
         error.stack,
       );
-      return null;
+      throw error;
     }
   }
 
@@ -191,16 +246,7 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
         `Error al buscar mediciones por sensor: ${error.message}`,
         error.stack,
       );
-      return {
-        data: [],
-        meta: {
-          total: 0,
-          page: 1,
-          lastPage: 1,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+      throw error;
     }
   }
 
@@ -246,16 +292,7 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
         `Error al buscar mediciones por área: ${error.message}`,
         error.stack,
       );
-      return {
-        data: [],
-        meta: {
-          total: 0,
-          page: 1,
-          lastPage: 1,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+      throw error;
     }
   }
 
@@ -305,137 +342,7 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
         `Error al buscar mediciones por centro de trabajo: ${error.message}`,
         error.stack,
       );
-      return {
-        data: [],
-        meta: {
-          total: 0,
-          page: 1,
-          lastPage: 1,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+      throw error;
     }
-  }
-
-  async getAggregatedMeasurements(
-    filter: FilterMeasurementsDto,
-    aggregationType: '15min' | 'hour' | 'day' | 'week'
-  ): Promise<AggregatedMeasurement[]> {
-    try {
-      const where = this.buildWhereClause(filter);
-      
-      // Convertir el intervalo a milisegundos
-      let intervalMs: number;
-      switch (aggregationType) {
-        case '15min':
-          intervalMs = 15 * 60 * 1000; // 15 minutos
-          break;
-        case 'hour':
-          intervalMs = 60 * 60 * 1000; // 1 hora
-          break;
-        case 'day':
-          intervalMs = 24 * 60 * 60 * 1000; // 1 día
-          break;
-        case 'week':
-          intervalMs = 7 * 24 * 60 * 60 * 1000; // 1 semana
-          break;
-      }
-
-      const result = await this.prisma.measurement.aggregateRaw({
-        pipeline: [
-          // Filtrar por las condiciones
-          { $match: where },
-          // Agrupar por intervalo de tiempo
-          {
-            $group: {
-              _id: {
-                $subtract: [
-                  { $toLong: '$date' },
-                  { $mod: [{ $toLong: '$date' }, intervalMs] }
-                ]
-              },
-              avgVoltage: { $avg: '$voltage' },
-              maxVoltage: { $max: '$voltage' },
-              minVoltage: { $min: '$voltage' },
-              avgCurrent: { $avg: '$current' },
-              maxCurrent: { $max: '$current' },
-              minCurrent: { $min: '$current' },
-              count: { $sum: 1 },
-              // Mantener la información del primer sensor del grupo
-              sensor: { $first: '$sensor' }
-            }
-          },
-          // Convertir el timestamp de vuelta a fecha
-          {
-            $project: {
-              _id: 0,
-              timestamp: { $toDate: '$_id' },
-              avgVoltage: 1,
-              maxVoltage: 1,
-              minVoltage: 1,
-              avgCurrent: 1,
-              maxCurrent: 1,
-              minCurrent: 1,
-              count: 1,
-              sensor: 1
-            }
-          },
-          // Ordenar por timestamp
-          { $sort: { timestamp: 1 } }
-        ]
-      });
-
-      return result as unknown as AggregatedMeasurement[];
-    } catch (error) {
-      this.logger.error(
-        `Error al obtener mediciones agregadas: ${error.message}`,
-        error.stack,
-      );
-      return [];
-    }
-  }
-
-  private buildWhereClause(filter?: FilterMeasurementsDto): any {
-    const where: any = {};
-
-    if (filter) {
-      if (filter.startDate && filter.endDate) {
-        where.date = {
-          gte: new Date(filter.startDate),
-          lte: new Date(filter.endDate),
-        };
-      } else if (filter.startDate) {
-        where.date = {
-          gte: new Date(filter.startDate),
-        };
-      } else if (filter.endDate) {
-        where.date = {
-          lte: new Date(filter.endDate),
-        };
-      }
-
-      if (filter.sensorId) {
-        where.sensorId = filter.sensorId;
-      }
-
-      if (filter.areaId || filter.workCenterId) {
-        const sensorWhere: any = {};
-
-        if (filter.areaId) {
-          sensorWhere.areaId = filter.areaId;
-        }
-
-        if (filter.workCenterId) {
-          sensorWhere.area = {
-            workCenterId: filter.workCenterId,
-          };
-        }
-
-        where.sensor = sensorWhere;
-      }
-    }
-
-    return where;
   }
 }

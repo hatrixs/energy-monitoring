@@ -5,7 +5,6 @@ import { AreasModule } from './areas/areas.module';
 import { AuthModule } from './auth/auth.module';
 import { envValidationSchema } from './config';
 import { MeasurementsModule } from './measurements/measurements.module';
-import { SensorsModule } from './sensors/sensors.module';
 import { StatisticsModule } from './statistics/statistics.module';
 import { WorkCentersModule } from './work-centers/work-centers.module';
 import { SeedModule } from './seed/seed.module';
@@ -22,7 +21,6 @@ import { SeedModule } from './seed/seed.module';
     AuthModule,
     WorkCentersModule,
     AreasModule,
-    SensorsModule,
     MeasurementsModule,
     StatisticsModule,
     SeedModule,

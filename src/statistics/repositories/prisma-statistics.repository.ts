@@ -13,29 +13,27 @@ export class PrismaStatisticsRepository implements StatisticsRepository {
     try {
       const { startDate, endDate, sensorId, areaId, workCenterId } = filters;
 
-      const whereClause = {
-        ...(startDate &&
-          !endDate && {
-            date: {
-              gte: new Date(new Date(startDate).setHours(0, 0, 0, 0)),
-              lt: new Date(new Date(startDate).setHours(23, 59, 59, 999)),
-            },
-          }),
-        ...(startDate &&
-          endDate && {
-            date: {
-              gte: new Date(new Date(startDate).setHours(0, 0, 0, 0)),
-              lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
-            },
-          }),
-        ...(sensorId && { sensorId }),
-        ...(areaId && { sensor: { areaId } }),
-        ...(workCenterId && { sensor: { area: { workCenterId } } }),
-      };
-
       // Obtener estadísticas básicas
       const basicStats = await this.prisma.measurement.aggregate({
-        where: whereClause,
+        where: {
+          ...(startDate &&
+            !endDate && {
+              date: {
+                gte: new Date(new Date(startDate).setHours(0, 0, 0, 0)),
+                lt: new Date(new Date(startDate).setHours(23, 59, 59, 999)),
+              },
+            }),
+          ...(startDate &&
+            endDate && {
+              date: {
+                gte: new Date(new Date(startDate).setHours(0, 0, 0, 0)),
+                lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+              },
+            }),
+          ...(sensorId && { sensorId }),
+          ...(areaId && { sensor: { areaId } }),
+          ...(workCenterId && { sensor: { area: { workCenterId } } }),
+        },
         _avg: {
           voltage: true,
           current: true,

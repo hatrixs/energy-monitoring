@@ -12,10 +12,5 @@ export interface CreateAreaData {
 }
 
 export interface AreaRepository {
-  findByNameAndWorkCenter(
-    name: string,
-    workCenterId: string,
-  ): Promise<Area | null>;
-  create(data: CreateAreaData): Promise<Area>;
   findOrCreate(data: CreateAreaData): Promise<Area>;
 }

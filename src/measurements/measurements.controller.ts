@@ -34,26 +34,6 @@ export class MeasurementsController {
   @Get()
   @Auth()
   async findMany(@Query() filters: FilterMeasurementsDto) {
-    // Si se especifica un tipo de agregación, usar el método de agregación
-    if (filters.aggregationType) {
-      const aggregatedData = await this.measurementsService.getAggregatedMeasurements(
-        filters,
-        filters.aggregationType
-      );
-
-      return {
-        data: aggregatedData,
-        meta: {
-          total: aggregatedData.length,
-          page: 1,
-          lastPage: 1,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
-    }
-
-    // Si no hay agregación, usar el método normal
     return this.measurementsService.findMany(filters);
   }
 

@@ -17,6 +17,7 @@ export class SeedService {
       let data: any[];
       try {
         // Usar process.cwd() para obtener la raíz del proyecto y luego ir a src/seed
+        // TODO: otra opcion podria ser copiar el archivo data.json a dist por medio de configuracion de nestjs para el build
         const filePath = join(process.cwd(), 'src', 'seed', 'data.json');
         this.logger.log(`Intentando cargar archivo desde: ${filePath}`);
 

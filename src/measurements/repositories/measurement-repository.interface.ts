@@ -38,13 +38,18 @@ export interface CreateMeasurementData {
 
 export interface AggregatedMeasurement {
   timestamp: Date;
-  avgVoltage: number;
-  maxVoltage: number;
-  minVoltage: number;
-  avgCurrent: number;
-  maxCurrent: number;
-  minCurrent: number;
+  voltage: number;
+  current: number;
   count: number;
+}
+
+export interface CreateMeasurementWithRelationsData {
+  workCenter: string;
+  area: string;
+  sensorId: string;
+  voltage: number;
+  current: number;
+  date: Date;
 }
 
 export interface MeasurementRepository {
@@ -54,6 +59,13 @@ export interface MeasurementRepository {
    * @returns La medición creada
    */
   create(data: CreateMeasurementData): Promise<Measurement>;
+
+  /**
+   * Crea una nueva medición en la base de datos junto con sus relaciones
+   * @param data Datos de la medición y sus relaciones a crear
+   * @returns La medición creada
+   */
+  createWithRelations(data: CreateMeasurementWithRelationsData): Promise<Measurement>;
 
   /**
    * Busca mediciones aplicando filtros y paginación
@@ -103,15 +115,4 @@ export interface MeasurementRepository {
     workCenterId: string,
     pagination: PaginationDto,
   ): Promise<PaginatedResponse<Measurement>>;
-
-  /**
-   * Obtiene mediciones agregadas por período
-   * @param filter Filtros de fecha y otros criterios
-   * @param aggregationType Tipo de agregación (15min, hour, day, week)
-   * @returns Lista de mediciones agregadas
-   */
-  getAggregatedMeasurements(
-    filter: FilterMeasurementsDto,
-    aggregationType: '15min' | 'hour' | 'day' | 'week'
-  ): Promise<AggregatedMeasurement[]>;
 }
