@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { CreateMeasurementDto } from './dto/create-measurement.dto';
 import { FilterMeasurementsDto } from './dto/filter-measurements.dto';
@@ -13,6 +14,7 @@ export class MeasurementsService {
   constructor(
     @Inject('MeasurementRepository')
     private readonly measurementRepository: MeasurementRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(createMeasurementDto: CreateMeasurementDto) {
@@ -20,7 +22,7 @@ export class MeasurementsService {
       `${createMeasurementDto.date}T${createMeasurementDto.time}`,
     );
 
-    return this.measurementRepository.createWithRelations({
+    const measurement = await this.measurementRepository.createWithRelations({
       workCenter: createMeasurementDto.workCenter,
       area: createMeasurementDto.area,
       sensorId: createMeasurementDto.sensorId,
@@ -28,6 +30,11 @@ export class MeasurementsService {
       current: createMeasurementDto.current,
       date: measurementDate,
     });
+
+    // Emitir evento de nueva medición
+    this.eventEmitter.emit('new.measurement', createMeasurementDto);
+
+    return measurement;
   }
 
   async findMany(filters?: FilterMeasurementsDto) {
