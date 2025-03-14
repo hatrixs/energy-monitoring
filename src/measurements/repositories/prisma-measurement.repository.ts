@@ -39,6 +39,22 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
     },
   } as const;
 
+  /**
+   * Convierte una fecha en formato string (YYYY-MM-DD) a Date configurada al inicio del día (00:00:00)
+   */
+  private createStartOfDay(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day, 0, 0, 0, 0);
+  }
+
+  /**
+   * Convierte una fecha en formato string (YYYY-MM-DD) a Date configurada al final del día (23:59:59)
+   */
+  private createEndOfDay(dateStr: string): Date {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day, 23, 59, 59, 999);
+  }
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: CreateMeasurementData): Promise<Measurement> {
@@ -128,18 +144,20 @@ export class PrismaMeasurementRepository implements MeasurementRepository {
       const where: any = {};
 
       if (filter) {
+        // Manejo de filtros de fecha
         if (filter.startDate && filter.endDate) {
           where.date = {
-            gte: new Date(filter.startDate),
-            lte: new Date(filter.endDate),
+            gte: this.createStartOfDay(filter.startDate),
+            lte: this.createEndOfDay(filter.endDate),
           };
         } else if (filter.startDate) {
           where.date = {
-            gte: new Date(filter.startDate),
+            gte: this.createStartOfDay(filter.startDate),
+            lte: this.createEndOfDay(filter.startDate),
           };
         } else if (filter.endDate) {
           where.date = {
-            lte: new Date(filter.endDate),
+            lte: this.createEndOfDay(filter.endDate),
           };
         }
 
